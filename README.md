@@ -1,73 +1,25 @@
-# React + TypeScript + Vite
+# Simulata UI 🖥️
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Simulata UI is a professional, high-fidelity user interface built to monitor and manage end-to-end integration simulation testing for combat and mission-critical systems. 
 
-Currently, two official plugins are available:
+This frontend dashboard is fully responsive, aligned with our official Figma design specifications, and tailored for real-time visualization of simulation states, run histories, and system profiles.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 🛠️ Tech Stack & Key Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+* **Modern Frontend:** React 18, TypeScript, and Vite for fast builds and type safety.
+* **Component-Driven Styling:** Tailwind CSS for modular, uniform, and maintainable styles matching design system requirements.
+* **Rich Iconography:** Icon integrations powered by `lucide-react`.
+* **Intuitive Navigation:** Client-side routing with `react-router-dom` for seamless transitions between pages (Dashboard, History, Simulations, and Profiles).
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🚀 Getting Started (Local Setup)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+To run the UI on your local machine, follow these simple steps:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### 1. Clone the Repository
+Clone this repository to your local workspace:
+```bash
+git clone [https://github.com/rivka3256/simulata-ui.git](https://github.com/rivka3256/simulata-ui.git)
