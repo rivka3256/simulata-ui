@@ -247,17 +247,15 @@
 //     </div>
 //   );
 // }
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   FlaskConical, 
   Play, 
-  CheckCircle2, 
-  Percent, 
   Activity, 
-  ChevronRight,
-  Clock
+  Percent, 
+  Clock,
+  Plus
 } from "lucide-react";
 import { 
   getStats, 
@@ -276,9 +274,9 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: string |
     <div className="bg-white rounded-[6px] border-2 border-slate-100 p-5 shadow-sm text-left font-heebo">
       <div className="flex items-center gap-3 mb-3">
         <Icon size={16} className="text-navy-950" />
-       <span className="text-[10px] font-black tracking-[0.15em] text-navy-950 uppercase">
-  {label}
-</span>
+        <span className="text-[10px] font-black tracking-[0.15em] text-navy-950 uppercase">
+          {label}
+        </span>
       </div>
       <div className="text-2xl font-black text-navy-950 tabular-nums">
         {value}
@@ -315,29 +313,15 @@ export default function Dashboard() {
 
   useEffect(() => { 
     refresh();
-    
-    const interval = setInterval(() => {
-      refresh();
-    }, 5000);
-    
+    const interval = setInterval(refresh, 5000);
     return () => clearInterval(interval);
   }, []);
 
   const handleRun = async (id: string, name: string) => {
-    // בדיקה שיש Actions בסימולציה לפני הרצה (כמו ב-Simulations.tsx)
     const scenario = simulations.find(s => s.id === id || s.simulation_config_id === id);
     
-    if (!scenario || !scenario.scenario_config || !scenario.scenario_config.phases) {
-      toast(`Cannot run "${name}": No execution plan defined.`, "error");
-      return;
-    }
-
-    const hasActions = scenario.scenario_config.phases.some(
-      (p: any) => p.actions && p.actions.length > 0
-    );
-
-    if (!hasActions) {
-      toast(`Cannot run "${name}": No actions configured. Please edit the simulation first.`, "error");
+    if (!scenario || !scenario.scenario_config?.phases?.some((p: any) => p.actions?.length > 0)) {
+      toast(`Cannot run "${name}": No actions configured.`, "error");
       return;
     }
 
@@ -350,7 +334,11 @@ export default function Dashboard() {
     }
   };
 
-  if (loading) return <div className="p-20 text-center font-heebo font-bold text-slate-300 tracking-widest italic">LOADING SIMULATA ENGINE...</div>;
+  if (loading) return (
+    <div className="p-20 text-center font-heebo font-bold text-slate-300 tracking-widest italic">
+      LOADING SIMULATA ENGINE...
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 p-8 font-heebo text-left" dir="ltr">
@@ -361,7 +349,9 @@ export default function Dashboard() {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-              <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Operational Overview</span>
+              <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase">
+                Operational Overview
+              </span>
             </div>
             <h1 className="text-3xl font-black text-navy-950 tracking-tight">DASHBOARD</h1>
           </div>
@@ -378,81 +368,90 @@ export default function Dashboard() {
         )}
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-12 gap-8">
+        <div className="grid grid-cols-12 gap-8 items-start">
           
-          {/* LEFT COLUMN: SIMULATIONS LIST (The Main Tool) */}
-          <div className="col-span-8 space-y-4">
-            <div className="flex items-center justify-between px-2">
-              <h2 className="text-[11px] font-black text-navy-950 tracking-[0.2em] uppercase">Simulations</h2>
-              <button 
-                onClick={() => navigate('/new-simulation')}
-                className="group flex items-center gap-2 bg-white text-navy-950 border-2 border-slate-100 px-4 py-2 rounded-[6px] font-black text-[10px] tracking-wider hover:border-navy-950 hover:bg-slate-50 transition-all shadow-sm">
-               <span className="text-blue-500 group-hover:scale-125 transition-transform">+</span>
-                NEW SIMULATION
-              </button>
-            </div>
-            
+          {/* LEFT COLUMN: SIMULATIONS LIST */}
+          <div className="col-span-8">
             <div className="bg-white rounded-[6px] border-2 border-slate-100 shadow-sm overflow-hidden">
-              <div className="p-2">
+              
+              {/* Header inside the box */}
+              <div className="flex items-center justify-between p-4 border-b border-slate-50">
+                <h2 className="text-[11px] font-black text-slate-500 tracking-[0.2em] uppercase">
+                  Simulations
+                </h2>
+                <button 
+                  onClick={() => navigate('/new-simulation')}
+                  className="group flex items-center gap-2 bg-white text-navy-950 border border-slate-200 px-3 py-1.5 rounded-[4px] font-black text-[10px] tracking-wider hover:border-navy-950 transition-all"
+                >
+                  <Plus size={12} className="text-sky-400 group-hover:scale-125 transition-transform" />
+                  NEW SIMULATION
+                </button>
+              </div>
+
+              <div className="divide-y divide-slate-50">
                 {simulations.length === 0 ? (
-                  <div className="py-12 text-center text-slate-300 font-bold text-xs tracking-widest uppercase">No Scenarios Defined</div>
+                  <div className="py-12 text-center text-slate-300 font-bold text-xs tracking-widest uppercase">
+                    No Scenarios Defined
+                  </div>
                 ) : (
                   simulations.map((sim) => {
-                    // בדיקה האם יש Actions בסימולציה
                     const hasActions = sim.scenario_config?.phases?.some(
                       (p: any) => p.actions && p.actions.length > 0
                     ) || false;
 
                     return (
-                    <div 
-                      key={sim.id} 
-                      className="flex items-center justify-between p-4 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors group cursor-pointer"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-slate-100 rounded-[4px] flex items-center justify-center group-hover:bg-sky-400 group-hover:text-white transition-all shadow-inner">
-                          <Activity size={16} />
+                      <div 
+                        key={sim.id} 
+                        className="flex items-center justify-between p-4 hover:bg-slate-50/50 transition-colors group cursor-pointer"
+                      >
+                        <div className="flex items-center gap-4">
+                          {/* האייקון שהופך לתכלת ב-Hover */}
+                          <div className="w-10 h-10 bg-slate-100 rounded-[4px] flex items-center justify-center group-hover:bg-sky-400 group-hover:text-white transition-all shadow-inner">
+                            <Activity size={16} />
+                          </div>
+                          <div>
+                            <p className="text-[13px] font-black text-navy-950 uppercase tracking-tight">
+                              {sim.scenario_name || sim.name}
+                            </p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase">
+                              Actions: <span className="text-slate-500 italic">
+                                {sim.scenario_config?.phases?.reduce((sum: number, p: any) => sum + (p.actions?.length || 0), 0) || 0}
+                              </span>
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-[13px] font-black text-navy-950 uppercase tracking-tight">{sim.scenario_name || sim.name}</p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase">
-                            Actions: <span className="text-slate-500 italic">{sim.scenario_config?.phases?.reduce((sum: number, p: any) => sum + (p.actions?.length || 0), 0) || 0}</span>
-                          </p>
+                        
+                        <div className="flex items-center gap-6">
+                           {hasActions ? (
+                             <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                                <span className="text-[9px] font-black text-emerald-700 uppercase">Ready</span>
+                             </div>
+                           ) : (
+                             <div className="flex items-center gap-2 bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
+                                <div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div>
+                                <span className="text-[9px] font-black text-amber-700 uppercase">Not Ready</span>
+                             </div>
+                           )}
+                           
+                           <button 
+                             onClick={() => handleRun(sim.simulation_config_id || sim.id, sim.scenario_name || sim.name)}
+                             disabled={!hasActions}
+                             className="bg-sky-400 text-white px-5 py-1.5 rounded-[4px] font-black text-[10px] tracking-tighter hover:bg-sky-500 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                           >
+                             <Play size={10} fill="currentColor" />
+                             RUN
+                           </button>
                         </div>
                       </div>
-                      
-                      <div className="flex items-center gap-6">
-                         {/* Status Badge - מציג אם מוכן להרצה */}
-                         {hasActions ? (
-                           <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
-                              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                              <span className="text-[9px] font-black text-emerald-700 uppercase">Ready</span>
-                           </div>
-                         ) : (
-                           <div className="flex items-center gap-2 bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
-                              <div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div>
-                              <span className="text-[9px] font-black text-amber-700 uppercase">Not Ready</span>
-                           </div>
-                         )}
-                         
-                         {/* Run Button */}
-                         <button 
-                           onClick={() => handleRun(sim.simulation_config_id || sim.id, sim.scenario_name || sim.name)}
-                           disabled={!hasActions}
-                           className="bg-sky-400 text-white px-5 py-1.5 rounded-[4px] font-black text-[10px] tracking-tighter hover:bg-sky-500 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                         >
-                           <Play size={10} fill="currentColor" />
-                           RUN
-                         </button>
-                      </div>
-                    </div>
-                  );
+                    );
                   })
                 )}
               </div>
             </div>
           </div>
 
-          {/* RIGHT COLUMN: RECENT RUNS (The Activity Sidebar) */}
+          {/* RIGHT COLUMN: RECENT RUNS */}
           <div className="col-span-4 space-y-6">
             <section className="bg-white rounded-[6px] border-2 border-slate-100 shadow-sm p-6">
               <div className="flex items-center justify-between mb-6">
@@ -478,7 +477,9 @@ export default function Dashboard() {
                         <p className="text-[11px] font-black text-navy-950 uppercase truncate tracking-tight group-hover:text-blue-500 transition-colors">
                           {run.simulation_name}
                         </p>
-                        <p className="text-[9px] text-slate-400 font-bold">{run.started_at ? new Date(run.started_at).toLocaleString() : '—'}</p>
+                        <p className="text-[9px] text-slate-400 font-bold">
+                          {run.started_at ? new Date(run.started_at).toLocaleString() : '—'}
+                        </p>
                       </div>
                       <span className="text-[10px] font-black text-slate-300 tabular-nums">
                         {(run.duration_seconds || 0).toFixed(1)}s
@@ -491,14 +492,11 @@ export default function Dashboard() {
 
             {/* Engine Status Card */}
             <section className="bg-navy-950 rounded-[6px] p-6 text-white shadow-lg relative overflow-hidden">
-              {/* Decorative Background Element */}
               <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
-              
               <div className="flex items-center gap-2 mb-6">
                 <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.6)]"></div>
                 <span className="text-[10px] font-black tracking-widest uppercase opacity-60">System Core V3</span>
               </div>
-              
               <div className="space-y-4 relative z-10">
                  <div>
                     <p className="text-[9px] font-bold opacity-40 uppercase mb-1">Current Profile</p>
