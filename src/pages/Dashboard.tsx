@@ -300,7 +300,7 @@ export default function Dashboard() {
     try {
       const [s, r, sims] = await Promise.all([
         getStats(),
-        listRuns({ limit: 10 }), // העלינו את הכמות להצגה בסיידבר
+        listRuns({ limit: 10 }),
         listScenarios(),
       ]); 
       setStats(s);
@@ -313,9 +313,34 @@ export default function Dashboard() {
     }
   };
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => { 
+    refresh();
+    
+    const interval = setInterval(() => {
+      refresh();
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const handleRun = async (id: string, name: string) => {
+    // בדיקה שיש Actions בסימולציה לפני הרצה (כמו ב-Simulations.tsx)
+    const scenario = simulations.find(s => s.id === id || s.simulation_config_id === id);
+    
+    if (!scenario || !scenario.scenario_config || !scenario.scenario_config.phases) {
+      toast(`Cannot run "${name}": No execution plan defined.`, "error");
+      return;
+    }
+
+    const hasActions = scenario.scenario_config.phases.some(
+      (p: any) => p.actions && p.actions.length > 0
+    );
+
+    if (!hasActions) {
+      toast(`Cannot run "${name}": No actions configured. Please edit the simulation first.`, "error");
+      return;
+    }
+
     try {
       const result = await runScenario(id);
       toast(`Simulation "${name}" started`, "info");
@@ -372,7 +397,13 @@ export default function Dashboard() {
                 {simulations.length === 0 ? (
                   <div className="py-12 text-center text-slate-300 font-bold text-xs tracking-widest uppercase">No Scenarios Defined</div>
                 ) : (
-                  simulations.map((sim) => (
+                  simulations.map((sim) => {
+                    // בדיקה האם יש Actions בסימולציה
+                    const hasActions = sim.scenario_config?.phases?.some(
+                      (p: any) => p.actions && p.actions.length > 0
+                    ) || false;
+
+                    return (
                     <div 
                       key={sim.id} 
                       className="flex items-center justify-between p-4 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors group"
@@ -382,31 +413,40 @@ export default function Dashboard() {
                           <Activity size={16} />
                         </div>
                         <div>
-                          <p className="text-[13px] font-black text-navy-950 uppercase tracking-tight">{sim.name}</p>
+                          <p className="text-[13px] font-black text-navy-950 uppercase tracking-tight">{sim.scenario_name || sim.name}</p>
                           <p className="text-[10px] text-slate-400 font-bold uppercase">
-                            Last run: <span className="text-slate-500 italic">{sim.last_run || 'Never'}</span>
+                            Actions: <span className="text-slate-500 italic">{sim.scenario_config?.phases?.reduce((sum: number, p: any) => sum + (p.actions?.length || 0), 0) || 0}</span>
                           </p>
                         </div>
                       </div>
                       
                       <div className="flex items-center gap-6">
-                         {/* Status Badge */}
-                         <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
-                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                            <span className="text-[9px] font-black text-emerald-700 uppercase">Passed</span>
-                         </div>
+                         {/* Status Badge - מציג אם מוכן להרצה */}
+                         {hasActions ? (
+                           <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+                              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                              <span className="text-[9px] font-black text-emerald-700 uppercase">Ready</span>
+                           </div>
+                         ) : (
+                           <div className="flex items-center gap-2 bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
+                              <div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div>
+                              <span className="text-[9px] font-black text-amber-700 uppercase">Not Ready</span>
+                           </div>
+                         )}
                          
                          {/* Run Button */}
                          <button 
-                           onClick={() => handleRun(sim.id, sim.name)}
-                           className="bg-sky-400 text-white px-5 py-1.5 rounded-[4px] font-black text-[10px] tracking-tighter hover:bg-sky-500 transition-all flex items-center gap-2"
+                           onClick={() => handleRun(sim.simulation_config_id || sim.id, sim.scenario_name || sim.name)}
+                           disabled={!hasActions}
+                           className="bg-sky-400 text-white px-5 py-1.5 rounded-[4px] font-black text-[10px] tracking-tighter hover:bg-sky-500 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                          >
                            <Play size={10} fill="currentColor" />
                            RUN
                          </button>
                       </div>
                     </div>
-                  ))
+                  );
+                  })
                 )}
               </div>
             </div>
@@ -426,20 +466,26 @@ export default function Dashboard() {
               </div>
               
               <div className="space-y-5">
-                {recentRuns.map((run) => (
-                  <div key={run.id} className="flex items-start gap-3 group cursor-pointer" onClick={() => navigate(`/run/${run.id}`)}>
-                    <div className={`w-2 h-2 mt-1 rounded-full shrink-0 ${run.status === 'passed' ? 'bg-emerald-400' : 'bg-rose-500'}`}></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-black text-navy-950 uppercase truncate tracking-tight group-hover:text-blue-500 transition-colors">
-                        {run.scenario_name}
-                      </p>
-                      <p className="text-[9px] text-slate-400 font-bold">{run.timestamp}</p>
-                    </div>
-                    <span className="text-[10px] font-black text-slate-300 tabular-nums">
-                      {(run.duration / 1000).toFixed(1)}s
-                    </span>
+                {recentRuns.length === 0 ? (
+                  <div className="py-8 text-center text-slate-300 font-bold text-xs tracking-widest uppercase">
+                    No Recent Runs
                   </div>
-                ))}
+                ) : (
+                  recentRuns.map((run) => (
+                    <div key={run.id} className="flex items-start gap-3 group cursor-pointer" onClick={() => navigate(`/run/${run.id}`)}>
+                      <div className={`w-2 h-2 mt-1 rounded-full shrink-0 ${run.status === 'passed' ? 'bg-emerald-400' : 'bg-rose-500'}`}></div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-black text-navy-950 uppercase truncate tracking-tight group-hover:text-blue-500 transition-colors">
+                          {run.simulation_name}
+                        </p>
+                        <p className="text-[9px] text-slate-400 font-bold">{run.started_at ? new Date(run.started_at).toLocaleString() : '—'}</p>
+                      </div>
+                      <span className="text-[10px] font-black text-slate-300 tabular-nums">
+                        {(run.duration_seconds || 0).toFixed(1)}s
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </section>
 

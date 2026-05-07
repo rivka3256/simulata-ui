@@ -104,6 +104,17 @@ export default function RunView() {
     catch (e: any) { toast(`Failed to re-run: ${e.message}`, "error"); }
   };
 
+  const handleStop = () => {
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    clearTimer();
+    setStatus("stopped");
+    isCompleteRef.current = true;
+    toast("Simulation stopped", "info");
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -116,6 +127,11 @@ export default function RunView() {
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-bold">{simName || "Simulation Run"}</h1>
               <StatusBadge status={status} size="lg" />
+              {!isComplete && (
+                <button onClick={handleStop} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-700 hover:bg-red-600 rounded-lg text-xs font-medium transition-colors ml-auto">
+                  <XCircle size={13} />Stop
+                </button>
+              )}
               {isComplete && scenarioId && (
                 <button onClick={handleRunAgain} className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-700 hover:bg-cyan-600 rounded-lg text-xs font-medium transition-colors ml-auto">
                   <RotateCcw size={13} />Run Again

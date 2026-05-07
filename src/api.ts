@@ -43,14 +43,32 @@ export interface TopicStat {
   loss_percent: number;
 }
 
-//last_run?: string;
 export interface ScenarioInfo {
   id: string;
+  simulation_config_id?: string; // For compatibility with backend
   name: string;
+  scenario_name?: string; // For compatibility with backend
   description?: string;
   last_run?: string;
   dds_profile_id?: string;
-  scenario_config?: Record<string, any>;
+  scenario_config?: {
+    transport_latency_ms?: number;
+    transport_jitter_ms?: number;
+    phases?: Array<{
+      name: string;
+      actions: Array<{
+        type: string;
+        params?: {
+          count?: number;
+          frequency?: number;
+        };
+      }>;
+    }>;
+    assertions?: Array<{
+      type: string;
+      scope?: string;
+    }>;
+  };
 }
 
 export interface ProfileInfo {
@@ -99,31 +117,110 @@ export interface WsInitMessage {
 const MOCK_SCENARIOS: ScenarioInfo[] = [
   {
     id: "sim-1",
+    simulation_config_id: "sim-1",
     name: "GridOps Full Test",
+    scenario_name: "GridOps Full Test",
     description: "End-to-end grid operations simulation",
     dds_profile_id: "profile-1",
-    scenario_config: { phases: [{}, {}], assertions: [{}, {}, {}] },
+    scenario_config: { 
+      transport_latency_ms: 10,
+      transport_jitter_ms: 5,
+      phases: [
+        {
+          name: "setup",
+          actions: [
+            { type: "send_messages", params: { count: 5, frequency: 1 } }
+          ]
+        },
+        {
+          name: "test execution",
+          actions: [
+            { type: "send_messages", params: { count: 100, frequency: 10 } },
+            { type: "read_messages", params: { count: 100, frequency: 10 } }
+          ]
+        }
+      ], 
+      assertions: [
+        { type: "delivery_complete", scope: "all" },
+        { type: "no_errors", scope: "all" },
+        { type: "all_matched", scope: "all" }
+      ] 
+    },
   },
   {
     id: "sim-2",
+    simulation_config_id: "sim-2",
     name: "Analysis Wizard",
+    scenario_name: "Analysis Wizard",
     description: "Analyze data merge margins",
     dds_profile_id: "profile-2",
-    scenario_config: { phases: [{}], assertions: [{}, {}] },
+    scenario_config: { 
+      transport_latency_ms: 20,
+      transport_jitter_ms: 10,
+      phases: [
+        {
+          name: "test execution",
+          actions: [
+            { type: "send_messages", params: { count: 50, frequency: 5 } }
+          ]
+        }
+      ], 
+      assertions: [
+        { type: "delivery_complete", scope: "all" },
+        { type: "no_errors", scope: "all" }
+      ] 
+    },
   },
   {
     id: "sim-3",
+    simulation_config_id: "sim-3",
     name: "Odin System Check",
+    scenario_name: "Odin System Check",
     description: "Ships monitoring & diagnostics",
     dds_profile_id: "profile-1",
-    scenario_config: { phases: [{}, {}, {}], assertions: [{}] },
+    scenario_config: { 
+      transport_latency_ms: 0,
+      transport_jitter_ms: 0,
+      phases: [
+        {
+          name: "setup",
+          actions: [
+            { type: "send_messages", params: { count: 10, frequency: 1 } }
+          ]
+        },
+        {
+          name: "test execution",
+          actions: [
+            { type: "send_messages", params: { count: 200, frequency: 20 } },
+            { type: "read_messages", params: { count: 200, frequency: 20 } }
+          ]
+        }
+      ], 
+      assertions: [
+        { type: "all_matched", scope: "all" }
+      ] 
+    },
   },
   {
     id: "sim-4",
+    simulation_config_id: "sim-4",
     name: "Tesla Integration",
+    scenario_name: "Tesla Integration",
     description: "Sync and exchange recordings",
     dds_profile_id: undefined,
-    scenario_config: { phases: [{}], assertions: [] },
+    scenario_config: { 
+      transport_latency_ms: 0,
+      transport_jitter_ms: 0,
+      phases: [
+        {
+          name: "test execution",
+          actions: [
+            { type: "send_messages", params: { count: 10, frequency: 1 } }
+          ]
+        }
+      ], 
+      assertions: [] 
+    },
   },
 ];
 
@@ -279,11 +376,14 @@ const delay = (ms = 300) => new Promise((r) => setTimeout(r, ms));
 export async function getStats(): Promise<Stats> {
   await delay();
   const passed = MOCK_RUNS.filter((r) => r.status === "passed").length;
+  const failed = MOCK_RUNS.filter((r) => r.status === "failed").length;
+  const total = MOCK_RUNS.length;
+  
   return {
-    total_runs: MOCK_RUNS.length,
+    total_runs: total,
     passed,
-    failed: MOCK_RUNS.filter((r) => r.status === "failed").length,
-    pass_rate: Math.round((passed / MOCK_RUNS.length) * 100),
+    failed,
+    pass_rate: total > 0 ? Math.round((passed / total) * 100) : 0,
   };
 }
 
@@ -314,8 +414,24 @@ export async function listScenarios(): Promise<ScenarioInfo[]> {
 
 export async function createScenario(data: any): Promise<ScenarioInfo> {
   await delay(500);
-  const newSim: ScenarioInfo = { id: `sim-${Date.now()}`, ...data };
-  MOCK_SCENARIOS.push(newSim);
+  const newId = `sim-${Date.now()}`;
+  const newSim: ScenarioInfo = { 
+    id: data.simulation_config_id || newId,
+    simulation_config_id: data.simulation_config_id || newId,
+    name: data.scenario_name || data.name || "Untitled Simulation",
+    scenario_name: data.scenario_name || data.name,
+    description: data.description,
+    scenario_config: data.scenario_config
+  };
+  
+  // If editing existing, update it
+  const existingIdx = MOCK_SCENARIOS.findIndex(s => s.id === newSim.id);
+  if (existingIdx !== -1) {
+    MOCK_SCENARIOS[existingIdx] = newSim;
+  } else {
+    MOCK_SCENARIOS.push(newSim);
+  }
+  
   return newSim;
 }
 
@@ -327,7 +443,41 @@ export async function deleteScenario(id: string): Promise<void> {
 
 export async function runScenario(id: string): Promise<{ run_id: string }> {
   await delay(300);
-  return { run_id: `run-live-${Date.now()}` };
+  const runId = `run-live-${Date.now()}`;
+  
+  // מציאת הסימולציה
+  const scenario = MOCK_SCENARIOS.find(s => s.id === id || s.simulation_config_id === id);
+  
+  // יצירת הרצה חדשה ב-Mock
+  const newRun: RunInfo = {
+    id: runId,
+    simulation_name: scenario?.scenario_name || scenario?.name || "Unknown Simulation",
+    status: "running",
+    duration_seconds: 0,
+    total_events: 0,
+    error_count: 0,
+    started_at: new Date().toISOString(),
+    test_scenario_id: id,
+  };
+  
+  // הוספה לרשימת ההרצות
+  MOCK_RUNS.unshift(newRun); // unshift = הוספה בהתחלה
+  
+  // סימולציה של השלמת הרצה אחרי 3 שניות
+  setTimeout(() => {
+    const runIndex = MOCK_RUNS.findIndex(r => r.id === runId);
+    if (runIndex !== -1) {
+      MOCK_RUNS[runIndex] = {
+        ...MOCK_RUNS[runIndex],
+        status: "passed",
+        duration_seconds: 3.2 + Math.random() * 2, // 3-5 שניות
+        total_events: 150 + Math.floor(Math.random() * 100),
+        error_count: 0,
+      };
+    }
+  }, 3000);
+  
+  return { run_id: runId };
 }
 
 export async function generateScenario(profileId: string, template: string, name?: string): Promise<{ scenario: any }> {

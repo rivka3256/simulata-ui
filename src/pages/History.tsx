@@ -364,9 +364,18 @@ export default function History() {
             <h1 className="text-3xl font-black text-navy-950 tracking-tight uppercase">Run History</h1>
             <p className="text-[11px] text-slate-400 mt-1 font-bold">Review and analyze system execution logs</p>
           </div>
-          <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase bg-white border border-slate-200 px-4 py-2 rounded-[6px] shadow-sm">
-            {runs.length} RUNS TOTAL
-          </span>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={refresh}
+              disabled={loading}
+              className="text-[10px] font-black text-blue-500 hover:text-blue-600 uppercase tracking-widest disabled:opacity-50 transition-colors"
+            >
+              {loading ? 'Refreshing...' : 'Refresh'}
+            </button>
+            <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase bg-white border border-slate-200 px-4 py-2 rounded-[6px] shadow-sm">
+              {sortedRuns.length} {sortedRuns.length !== runs.length ? `/ ${runs.length}` : ''} RUNS
+            </span>
+          </div>
         </div>
 
         {/* פילטרים - רקע לבן נקי וטקסט קריא וברור */}
@@ -385,7 +394,7 @@ export default function History() {
             >
               <option value="">All simulations</option>
               {scenarios.map((s) => (
-                <option key={s.id} value={s.name}>{s.name}</option>
+                <option key={s.id} value={s.scenario_name || s.name}>{s.scenario_name || s.name}</option>
               ))}
             </select>
             <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />

@@ -278,12 +278,30 @@ const Simulations: React.FC = () => {
     }
   };
 
-  const handleRun = async (id: string) => {
+  const handleRun = async (id: string, scenarioName: string) => {
+    // בדיקה שיש Actions בסימולציה לפני הרצה
+    const scenario = simulations.find(s => s.id === id || s.simulation_config_id === id);
+    
+    if (!scenario || !scenario.scenario_config || !scenario.scenario_config.phases) {
+      alert(`Cannot run "${scenarioName}": No execution plan defined.`);
+      return;
+    }
+
+    // בדיקה שיש לפחות action אחד
+    const hasActions = scenario.scenario_config.phases.some(
+      (p: any) => p.actions && p.actions.length > 0
+    );
+
+    if (!hasActions) {
+      alert(`Cannot run "${scenarioName}": No actions configured. Please edit the simulation and add at least one Data Reader or Data Writer.`);
+      return;
+    }
+
     try {
       const result = await runScenario(id);
       navigate(`/run/${result.run_id}`);
     } catch (error: any) {
-      alert(`שגיאה בהרצה: ${error.message}`);
+      alert(`Failed to run simulation: ${error.message}`);
     }
   };
 
@@ -348,16 +366,15 @@ const Simulations: React.FC = () => {
           const profile = profiles.find(p => p.id === s.dds_profile_id);
           
           // בדיקה האם יש לפחות פעולה אחת (Action) מוגדרת בתוך השלבים
-        // const hasActions = s.scenario_config?.phases?.some(
-        // (p: any) => p.actions && p.actions.length > 0
-        // ) || false;
-        const hasPhases = (s.scenario_config?.phases && s.scenario_config.phases.length > 0) || false;
+          const hasActions = s.scenario_config?.phases?.some(
+            (p: any) => p.actions && p.actions.length > 0
+          ) || false;
 
           return (
             <div 
               key={s.id} 
               // שינוי 1: הפיכת הכרטיס ללחיץ למעבר לעריכה
-              onClick={() => navigate(`/edit-simulation/${s.id}`)}
+              onClick={() => navigate(`/edit-simulation/${s.simulation_config_id || s.id}`)}
               className="bg-white border border-slate-200 rounded-[24px] p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer relative group"
             >
               <div className="flex justify-between items-start mb-4">
@@ -396,23 +413,29 @@ const Simulations: React.FC = () => {
                   </p>
                 </div>
                 <div className="text-center border-l border-slate-100">
-                  <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Assertions</p>
+                  <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Actions</p>
                   <p className="text-[20px] font-medium text-slate-700">
-                    {s.scenario_config?.assertions?.length || 0}
+                    {s.scenario_config?.phases?.reduce((sum: number, p: any) => sum + (p.actions?.length || 0), 0) || 0}
                   </p>
                 </div>
               </div>
 
               {/* שינוי 3: תיקון כפתור ה-Run */}
               {/* א. הוספת stopPropagation כדי שהקליק על הרצה לא יפתח בטעות את עריכת הדף */}
-              {/* ב. שינוי ה-disabled: כעת הכפתור יהיה זמין רק אם יש פעולות (hasActions) בסימולציה, ולא תלוי ב-dds_profile_id שבוטל! */}
+              {/* ב. שינוי ה-disabled: כעת הכפתור יהיה זמין רק אם יש Actions בסימולציה */}
+              {!hasActions && (
+                <div className="mb-3 text-center text-xs text-amber-600 bg-amber-50 py-2 rounded border border-amber-200">
+                  ⚠️ No actions configured - Edit to add actions before running
+                </div>
+              )}
           <button 
             onClick={(e) => {
               e.stopPropagation(); 
-              handleRun(s.id);
+              handleRun(s.simulation_config_id || s.id, s.scenario_name || s.name);
             }}
-            disabled={!hasPhases} // מאפשר להריץ כל סימולציה שיש לה שלבים מוגדרים
+            disabled={!hasActions} // מאפשר להריץ רק אם יש Actions מוגדרים
             className="w-full flex items-center justify-center gap-2 bg-[#37A8D8] text-white py-3 rounded-lg hover:bg-[#2e8db6] disabled:opacity-50 font-medium text-[16px] transition-colors"
+            title={!hasActions ? "Add actions to this simulation before running" : "Run this simulation"}
           >
             <Play size={18} fill="currentColor" />
             Run

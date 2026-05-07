@@ -823,7 +823,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Save, Clock, ShieldCheck, Activity, Settings, Database, Radio, Trash2 } from 'lucide-react';
 import { useToast } from '../components/Toast';
-import { createScenario, listScenarios, SimulationConfig } from '../api';
+import { createScenario, listScenarios } from '../api';
 
 interface Action {
   id: number;
@@ -866,11 +866,14 @@ const NewSimulation: React.FC = () => {
       const loadScenarioData = async () => {
         try {
           const scenarios = await listScenarios();
-          // שימוש ב-simulation_config_id לפי ה-API החדש
-          const scenario = scenarios.find(s => String(s.simulation_config_id).trim() === String(id).trim());
+          // חיפוש לפי simulation_config_id או id
+          const scenario = scenarios.find(s => 
+            String(s.simulation_config_id || s.id).trim() === String(id).trim()
+          );
           
           if (scenario) {
-            setScenarioName(scenario.scenario_name); //
+            // שימוש ב-scenario_name או name
+            setScenarioName(scenario.scenario_name || scenario.name);
             
             const config = scenario.scenario_config;
             if (config) {
@@ -915,9 +918,36 @@ const NewSimulation: React.FC = () => {
     ));
   };
 
+  const removeAction = (phaseId: number, actionId: number) => {
+    setPhases(prev => prev.map(p => {
+      if (p.id === phaseId) {
+        return { ...p, actions: p.actions.filter(a => a.id !== actionId) };
+      }
+      return p;
+    }));
+  };
+
+  const updateActionParams = (phaseId: number, actionId: number, field: 'messageCount' | 'frequency', value: number) => {
+    setPhases(prev => prev.map(p => {
+      if (p.id === phaseId) {
+        return {
+          ...p,
+          actions: p.actions.map(a => a.id === actionId ? { ...a, [field]: value } : a)
+        };
+      }
+      return p;
+    }));
+  };
+
   const handleSave = async () => {
     if (!scenarioName.trim()) {
       toast("Scenario name is required!", "error");
+      return;
+    }
+
+    const totalActions = phases.reduce((sum, p) => sum + p.actions.length, 0);
+    if (totalActions === 0) {
+      toast("Please add at least one Data Reader or Data Writer to your execution plan.", "error");
       return;
     }
 
@@ -1018,9 +1048,15 @@ const NewSimulation: React.FC = () => {
                            <span className="text-xs font-black uppercase text-navy-950">{action.type}</span>
                          </div>
                          <div className="flex gap-4 text-[10px] font-bold">
-                           <span>MSG: <input type="number" className="w-10 border rounded text-center" value={action.messageCount} onChange={e => /* update logic */ {}}/></span>
-                           <span>FREQ: <input type="number" className="w-10 border rounded text-center" value={action.frequency} onChange={e => /* update logic */ {}}/> HZ</span>
+                           <span>MSG: <input type="number" className="w-10 border rounded text-center" value={action.messageCount} onChange={e => updateActionParams(phase.id, action.id, 'messageCount', Number(e.target.value))}/></span>
+                           <span>FREQ: <input type="number" className="w-10 border rounded text-center" value={action.frequency} onChange={e => updateActionParams(phase.id, action.id, 'frequency', Number(e.target.value))}/> HZ</span>
                          </div>
+                         <button 
+                           onClick={() => removeAction(phase.id, action.id)} 
+                           className="opacity-0 group-hover:opacity-100 absolute -right-2 -top-2 bg-white border border-slate-200 p-1.5 rounded-full text-red-500 hover:bg-red-50 shadow-sm transition-all"
+                         >
+                           <Trash2 size={12} />
+                         </button>
                       </div>
                     ))}
                   </div>
@@ -1042,6 +1078,30 @@ const NewSimulation: React.FC = () => {
                 <label className="text-[11px] font-bold mb-1 block">Jitter (ms)</label>
                 <input type="number" className="w-full p-2 border rounded font-bold" value={jitter} onChange={e => setJitter(Number(e.target.value))}/>
               </div>
+            </div>
+          </section>
+
+          <section className="bg-white rounded-[6px] border p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-6">
+              <ShieldCheck size={16} className="text-slate-400" />
+              <h2 className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Assertions</h2>
+            </div>
+            <div className="space-y-2">
+              {[
+                { label: 'DELIVERY COMPLETE', key: 'deliveryComplete' },
+                { label: 'NO ERRORS', key: 'noErrors' },
+                { label: 'ALL MATCHED', key: 'allMatched' }
+              ].map(item => (
+                <div key={item.key} className="flex items-center justify-between p-3.5 rounded-[6px] border border-slate-100 bg-slate-50/50">
+                  <span className="text-[10px] font-black tracking-wider text-navy-950">{item.label}</span>
+                  <input 
+                    type="checkbox" 
+                    checked={assertions[item.key as keyof typeof assertions]}
+                    onChange={(e) => setAssertions(prev => ({ ...prev, [item.key]: e.target.checked }))}
+                    className="w-4 h-4 rounded border-slate-300 text-[#141e52] focus:ring-0 focus:ring-offset-0 cursor-pointer" 
+                  />
+                </div>
+              ))}
             </div>
           </section>
         </div>
