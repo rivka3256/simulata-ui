@@ -1019,7 +1019,7 @@ const NewSimulation: React.FC = () => {
               className="w-full px-4 py-3 border rounded-[6px] mt-2 outline-none focus:border-navy-950"
               value={scenarioName}
               onChange={(e) => setScenarioName(e.target.value)}
-              placeholder="e.g., Tactical Uplink Test"
+              // placeholder="e.g., Tactical Uplink Test"
             />
           </section>
 

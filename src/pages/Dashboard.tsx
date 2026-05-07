@@ -276,9 +276,9 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: string |
     <div className="bg-white rounded-[6px] border-2 border-slate-100 p-5 shadow-sm text-left font-heebo">
       <div className="flex items-center gap-3 mb-3">
         <Icon size={16} className="text-navy-950" />
-        <span className="text-[10px] font-black tracking-[0.15em] text-slate-400 uppercase">
-          {label}
-        </span>
+       <span className="text-[10px] font-black tracking-[0.15em] text-navy-950 uppercase">
+  {label}
+</span>
       </div>
       <div className="text-2xl font-black text-navy-950 tabular-nums">
         {value}
@@ -383,12 +383,12 @@ export default function Dashboard() {
           {/* LEFT COLUMN: SIMULATIONS LIST (The Main Tool) */}
           <div className="col-span-8 space-y-4">
             <div className="flex items-center justify-between px-2">
-              <h2 className="text-[11px] font-black text-slate-500 tracking-[0.2em] uppercase">Simulations</h2>
+              <h2 className="text-[11px] font-black text-navy-950 tracking-[0.2em] uppercase">Simulations</h2>
               <button 
                 onClick={() => navigate('/new-simulation')}
-                className="bg-navy-950 text-white px-4 py-1.5 rounded-[4px] font-bold text-[10px] tracking-wide hover:bg-navy-800 transition-all shadow-sm"
-              >
-                + NEW SIMULATION
+                className="group flex items-center gap-2 bg-white text-navy-950 border-2 border-slate-100 px-4 py-2 rounded-[6px] font-black text-[10px] tracking-wider hover:border-navy-950 hover:bg-slate-50 transition-all shadow-sm">
+               <span className="text-blue-500 group-hover:scale-125 transition-transform">+</span>
+                NEW SIMULATION
               </button>
             </div>
             
@@ -406,10 +406,10 @@ export default function Dashboard() {
                     return (
                     <div 
                       key={sim.id} 
-                      className="flex items-center justify-between p-4 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors group"
+                      className="flex items-center justify-between p-4 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors group cursor-pointer"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-slate-100 rounded-[4px] flex items-center justify-center group-hover:bg-navy-950 group-hover:text-white transition-all">
+                        <div className="w-10 h-10 bg-slate-100 rounded-[4px] flex items-center justify-center group-hover:bg-sky-400 group-hover:text-white transition-all shadow-inner">
                           <Activity size={16} />
                         </div>
                         <div>
