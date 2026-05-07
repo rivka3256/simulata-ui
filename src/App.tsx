@@ -16,7 +16,9 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/profiles" element={<Profiles />} />
           <Route path="/simulations" element={<Simulations />} />
-          <Route path="/new-simulation" element={<NewSimulation />} /> 
+          {/* <Route path="/new-simulation" element={<NewSimulation />} />  */}
+          <Route path="/new-simulation" element={<NewSimulation />} />
+          <Route path="/edit-simulation/:id" element={<NewSimulation />} />
           <Route path="/run/:runId" element={<RunView />} />
           <Route path="/history" element={<History />} />
           <Route path="/scenarios" element={<Navigate to="/simulations" replace />} />

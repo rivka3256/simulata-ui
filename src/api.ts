@@ -43,10 +43,12 @@ export interface TopicStat {
   loss_percent: number;
 }
 
+//last_run?: string;
 export interface ScenarioInfo {
   id: string;
   name: string;
   description?: string;
+  last_run?: string;
   dds_profile_id?: string;
   scenario_config?: Record<string, any>;
 }
@@ -441,3 +443,4 @@ export function connectRunWs(
 
   return fakeWs;
 }
+
