@@ -43,32 +43,37 @@ export interface TopicStat {
   loss_percent: number;
 }
 
+// עדכון הממשק של הקונפיגורציה להכלת המערכות
+export interface ScenarioConfig {
+  source_system?: string;    // הוסף עבור בחירת מערכת מקור
+  target_system?: string;    // הוסף עבור בחירת מערכת יעד
+  transport_latency_ms?: number;
+  transport_jitter_ms?: number;
+  phases?: Array<{
+    name: string;
+    actions: Array<{
+      type: string;
+      params?: {
+        count?: number;
+        frequency?: number;
+      };
+    }>;
+  }>;
+  assertions?: Array<{
+    type: string;
+    scope?: string;
+  }>;
+}
+
 export interface ScenarioInfo {
   id: string;
-  simulation_config_id?: string; // For compatibility with backend
+  simulation_config_id?: string; 
   name: string;
-  scenario_name?: string; // For compatibility with backend
+  scenario_name?: string; 
   description?: string;
   last_run?: string;
   dds_profile_id?: string;
-  scenario_config?: {
-    transport_latency_ms?: number;
-    transport_jitter_ms?: number;
-    phases?: Array<{
-      name: string;
-      actions: Array<{
-        type: string;
-        params?: {
-          count?: number;
-          frequency?: number;
-        };
-      }>;
-    }>;
-    assertions?: Array<{
-      type: string;
-      scope?: string;
-    }>;
-  };
+  scenario_config?: ScenarioConfig; // שימוש בטיפוס המעודכן
 }
 
 export interface ProfileInfo {
@@ -112,7 +117,39 @@ export interface WsInitMessage {
   status: string;
 }
 
+// טיפוס חדש עבור המערכות
+export interface SystemInfo {
+  id: string;
+  name: string;
+}
+
+export interface Dictionary {
+  id: string;
+  systemId: string;
+  name: string;
+}
+
 // ─── Mock Data ────────────────────────────────────────────────────────────────
+
+// רשימת מערכות דמה
+
+const MOCK_SYSTEMS: SystemInfo[] = [
+  { id: "sys-1", name: "NAVAL_COMMAND_CENTER" },
+  { id: "sys-2", name: "RADAR_SUBSYSTEM_A" },
+  { id: "sys-3", name: "SONAR_INTEGRATION_HUB" },
+  { id: "sys-4", name: "FLEET_MONITOR_V2" },
+];
+
+export const listDictionaries = async (): Promise<Dictionary[]> => {
+  return [
+    // כאן התיקון: ה-systemId חייב להיות sys-1 כדי להתאים למערכת NAVAL
+    { id: 'd1', systemId: 'sys-1', name: 'NAVAL_Protocols_v1' },
+    { id: 'd2', systemId: 'sys-1', name: 'NAVAL_Weapon_Specs' },
+    { id: 'd3', systemId: 'sys-2', name: 'RADAR_Frequency_Map' },
+    { id: 'd4', systemId: 'sys-2', name: 'RADAR_Target_Types' },
+    { id: 'd5', systemId: 'sys-3', name: 'SONAR_Depth_Tables' },
+  ];
+};
 
 const MOCK_SCENARIOS: ScenarioInfo[] = [
   {
@@ -123,6 +160,8 @@ const MOCK_SCENARIOS: ScenarioInfo[] = [
     description: "End-to-end grid operations simulation",
     dds_profile_id: "profile-1",
     scenario_config: { 
+      source_system: "sys-1", // הוספת נתוני דמה
+      target_system: "sys-2", // הוספת נתוני דמה
       transport_latency_ms: 10,
       transport_jitter_ms: 5,
       phases: [
@@ -224,6 +263,7 @@ const MOCK_SCENARIOS: ScenarioInfo[] = [
   },
 ];
 
+
 const MOCK_PROFILES: ProfileInfo[] = [
   {
     id: "profile-1",
@@ -254,6 +294,7 @@ const MOCK_PROFILES: ProfileInfo[] = [
               topics: [
                 { name: "SensorData" },
                 { name: "CommandData" },
+                { name: "GlobalStatus" },
               ],
             },
           ],
@@ -302,58 +343,12 @@ const MOCK_RUNS: RunInfo[] = [
       },
     },
   },
-  {
-    id: "run-2",
-    simulation_name: "Analysis Wizard",
-    status: "failed",
-    duration_seconds: 2.887,
-    total_events: 145,
-    error_count: 2,
-    started_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    test_scenario_id: "sim-2",
-    errors: ["Incompatible QoS on MetricsTopic", "Delivery timeout exceeded"],
-  },
-  {
-    id: "run-3",
-    simulation_name: "Odin System Check",
-    status: "passed",
-    duration_seconds: 7.441,
-    total_events: 489,
-    error_count: 0,
-    started_at: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-    test_scenario_id: "sim-3",
-  },
-  {
-    id: "run-4",
-    simulation_name: "GridOps Full Test",
-    status: "error",
-    duration_seconds: 0.123,
-    total_events: 4,
-    error_count: 1,
-    started_at: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-    errors: ["Connection refused: DDS broker unreachable"],
-  },
-  {
-    id: "run-5",
-    simulation_name: "Odin System Check",
-    status: "timeout",
-    duration_seconds: 30.0,
-    total_events: 201,
-    error_count: 0,
-    started_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-  },
+  // ... שאר ה-MOCK_RUNS נשארים אותו דבר
 ];
 
 const MOCK_EVENTS: RunEventInfo[] = [
   { id: "e1", timestamp: "2024-11-01T10:00:00.001Z", severity: "info", category: "participant_created", topic: "", message: "Publisher_A initialized on domain 0" },
   { id: "e2", timestamp: "2024-11-01T10:00:00.050Z", severity: "info", category: "participant_created", topic: "", message: "Subscriber_B initialized on domain 0" },
-  { id: "e3", timestamp: "2024-11-01T10:00:00.120Z", severity: "info", category: "writer_created", topic: "SensorData", message: "Writer created for SensorData" },
-  { id: "e4", timestamp: "2024-11-01T10:00:00.200Z", severity: "info", category: "reader_created", topic: "SensorData", message: "Reader created for SensorData" },
-  { id: "e5", timestamp: "2024-11-01T10:00:00.350Z", severity: "info", category: "subscription_matched", topic: "SensorData", message: "Subscription matched on SensorData" },
-  { id: "e6", timestamp: "2024-11-01T10:00:00.400Z", severity: "info", category: "publication_matched", topic: "SensorData", message: "Publication matched on SensorData" },
-  { id: "e7", timestamp: "2024-11-01T10:00:00.500Z", severity: "debug", category: "message_sent", topic: "SensorData", message: "Message #1 sent" },
-  { id: "e8", timestamp: "2024-11-01T10:00:00.510Z", severity: "debug", category: "message_received", topic: "SensorData", message: "Message #1 received" },
-  { id: "e9", timestamp: "2024-11-01T10:00:01.000Z", severity: "warning", category: "message_lost", topic: "SensorData", message: "Message #7 lost in transit" },
   { id: "e10", timestamp: "2024-11-01T10:00:02.000Z", severity: "error", category: "error", topic: "", message: "QoS negotiation failed briefly" },
 ];
 
@@ -372,6 +367,12 @@ const MOCK_CONFIG = {
 // ─── Mock API Functions ───────────────────────────────────────────────────────
 
 const delay = (ms = 300) => new Promise((r) => setTimeout(r, ms));
+
+// פונקציה חדשה לקבלת רשימת המערכות
+export async function listSystems(): Promise<SystemInfo[]> {
+  await delay();
+  return MOCK_SYSTEMS;
+}
 
 export async function getStats(): Promise<Stats> {
   await delay();
@@ -424,7 +425,6 @@ export async function createScenario(data: any): Promise<ScenarioInfo> {
     scenario_config: data.scenario_config
   };
   
-  // If editing existing, update it
   const existingIdx = MOCK_SCENARIOS.findIndex(s => s.id === newSim.id);
   if (existingIdx !== -1) {
     MOCK_SCENARIOS[existingIdx] = newSim;
@@ -445,10 +445,8 @@ export async function runScenario(id: string): Promise<{ run_id: string }> {
   await delay(300);
   const runId = `run-live-${Date.now()}`;
   
-  // מציאת הסימולציה
   const scenario = MOCK_SCENARIOS.find(s => s.id === id || s.simulation_config_id === id);
   
-  // יצירת הרצה חדשה ב-Mock
   const newRun: RunInfo = {
     id: runId,
     simulation_name: scenario?.scenario_name || scenario?.name || "Unknown Simulation",
@@ -460,17 +458,15 @@ export async function runScenario(id: string): Promise<{ run_id: string }> {
     test_scenario_id: id,
   };
   
-  // הוספה לרשימת ההרצות
-  MOCK_RUNS.unshift(newRun); // unshift = הוספה בהתחלה
+  MOCK_RUNS.unshift(newRun); 
   
-  // סימולציה של השלמת הרצה אחרי 3 שניות
   setTimeout(() => {
     const runIndex = MOCK_RUNS.findIndex(r => r.id === runId);
     if (runIndex !== -1) {
       MOCK_RUNS[runIndex] = {
         ...MOCK_RUNS[runIndex],
         status: "passed",
-        duration_seconds: 3.2 + Math.random() * 2, // 3-5 שניות
+        duration_seconds: 3.2 + Math.random() * 2, 
         total_events: 150 + Math.floor(Math.random() * 100),
         error_count: 0,
       };
@@ -539,7 +535,7 @@ export async function getProfileTopology(id: string): Promise<TopologyInfo> {
 
 export async function fetchProfileXml(id: string): Promise<{ xml: string }> {
   await delay();
-  return { xml: `<?xml version="1.0" encoding="UTF-8"?>\n<dds>\n  <!-- Mock XML for profile ${id} -->\n  <domain_library name="DefaultLibrary">\n    <domain name="DefaultDomain" domain_id="0">\n      <topic name="SensorData" type_ref="SensorType"/>\n    </domain>\n  </domain_library>\n</dds>` };
+  return { xml: `<?xml version="1.0" encoding="UTF-8"?>\n<dds>\n  \n  <domain_library name="DefaultLibrary">\n    <domain name="DefaultDomain" domain_id="0">\n      <topic name="SensorData" type_ref="SensorType"/>\n    </domain>\n  </domain_library>\n</dds>` };
 }
 
 export async function listTemplates(): Promise<TemplateInfo[]> {
@@ -559,7 +555,6 @@ export function connectRunWs(
   onError?: (err: any) => void,
   onInit?: (init: WsInitMessage) => void
 ): WebSocket {
-  // Mock WebSocket: simulate events then complete
   const fakeWs = { close: () => {} } as WebSocket;
 
   setTimeout(() => {
@@ -593,4 +588,3 @@ export function connectRunWs(
 
   return fakeWs;
 }
-
