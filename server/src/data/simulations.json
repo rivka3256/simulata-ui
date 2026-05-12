@@ -313,5 +313,34 @@
         ]
       }
     ]
+  },
+  {
+    "simulation_config_id": "cadf15d3-b1e6-4b39-91bb-24663a34608e",
+    "scenario_name": "bbjlbl",
+    "created_at": "2026-05-12T17:43:48.518Z",
+    "productions": [
+      {
+        "contracts": [
+          {
+            "version": "1.0.0",
+            "dataWriter": {
+              "message_count": 100,
+              "message_frequency_hz": 10
+            }
+          }
+        ]
+      },
+      {
+        "contracts": [
+          {
+            "version": "1.0.0",
+            "dataReader": {
+              "message_count": 100,
+              "message_frequency_hz": 10
+            }
+          }
+        ]
+      }
+    ]
   }
 ]
